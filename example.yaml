@@ -1,0 +1,19 @@
+- account: jdoe@example.com
+  evolution_id: 4b643417eda037a1605301fa6342cbbf11ed884d
+  thunderbird_id: 'jdoe%40example.com@mail.gandi.net'
+
+  message_filters:
+    - title: DigitalOcean
+      move_to: DigitalOcean
+      conditions:
+        - field: from
+          ends_with:
+            - '@digitalocean.com'
+
+    - title: Github
+      move_to: Github
+      conditions:
+        - field: from
+          ends_with:
+            - '@github.com'
+            - '@noreply.github.com'
