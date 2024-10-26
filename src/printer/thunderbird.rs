@@ -59,19 +59,17 @@ mod helpers {
         inner.join(" ")
     }
 
-    fn iter_join<I, S>(mut i: I, sep: &str) -> String
+    fn iter_join<I, S>(mut i: I, separator: &str) -> String
     where
         I: Iterator<Item = S>,
         S: std::fmt::Display,
     {
         let mut res = String::new();
 
+        let mut sep = "";
         while let Some(next) = i.next() {
-            if res.is_empty() {
-                res.push_str(&format!("{next}"));
-            } else {
-                res.push_str(&format!("{sep}{next}"));
-            }
+            res.push_str(&format!("{sep}{next}"));
+            sep = separator;
         }
 
         res
