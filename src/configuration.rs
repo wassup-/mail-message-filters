@@ -27,16 +27,22 @@ pub enum Condition {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EndsWith {
-    pub field: String,
+    pub field: Field,
     #[serde(rename = "ends_with")]
     pub values: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Contains {
-    pub field: String,
+    pub field: Field,
     #[serde(rename = "contains")]
     pub values: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum Field {
+    #[serde(rename = "from")]
+    From,
 }
 
 use serde::{Deserialize, Serialize};
