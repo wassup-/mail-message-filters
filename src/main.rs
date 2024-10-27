@@ -1,6 +1,7 @@
 mod configuration;
 mod dat;
 mod printer;
+mod util;
 mod xml;
 
 #[derive(clap::Parser, Debug)]
@@ -11,8 +12,8 @@ struct Cli {
 
 #[derive(clap::Subcommand, Debug)]
 enum Command {
-    Lint { path: String },
-    Print { path: String, format: PrintFormat },
+    Lint,
+    Print { format: PrintFormat },
 }
 
 #[derive(clap::ValueEnum, Copy, Clone, Debug)]
@@ -25,30 +26,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
     return match cli.command {
-        Command::Lint { path } => lint_config(path),
-        Command::Print { path, format } => print_config(path, format),
+        Command::Lint => lint_config(),
+        Command::Print { format } => print_config(format),
     };
 }
 
-fn load_config(path: String) -> Result<Configuration, Box<dyn std::error::Error>> {
-    use std::{fs::File, io::BufReader};
+fn load_config() -> Result<Configuration, Box<dyn std::error::Error>> {
+    use std::io::{self, Read};
 
-    let f = File::open(path)?;
-    let rdr = BufReader::new(f);
-    let config = serde_yaml::from_reader(rdr)?;
+    let mut buff = Vec::new();
+    let _ = io::stdin().read_to_end(&mut buff)?;
+
+    let config = serde_yaml::from_slice(&buff)?;
     Ok(config)
 }
 
-fn lint_config(path: String) -> Result<(), Box<dyn std::error::Error>> {
-    let config = load_config(path)?;
+fn lint_config() -> Result<(), Box<dyn std::error::Error>> {
+    let config = load_config()?;
 
     dbg!(config);
 
     Ok(())
 }
 
-fn print_config(path: String, format: PrintFormat) -> Result<(), Box<dyn std::error::Error>> {
-    let config = load_config(path)?;
+fn print_config(format: PrintFormat) -> Result<(), Box<dyn std::error::Error>> {
+    let config = load_config()?;
 
     let output = match format {
         PrintFormat::Evolution => printer::evolution::print_config(config),
@@ -59,6 +61,8 @@ fn print_config(path: String, format: PrintFormat) -> Result<(), Box<dyn std::er
 
     Ok(())
 }
+
+use std::io::BufReader;
 
 use clap::Parser;
 use configuration::Configuration;
