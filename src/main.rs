@@ -4,6 +4,8 @@ mod printer;
 mod util;
 mod xml;
 
+pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+
 #[derive(clap::Parser, Debug)]
 struct Cli {
     #[command(subcommand)]
@@ -22,7 +24,7 @@ enum PrintFormat {
     Thunderbird,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<()> {
     let cli = Cli::parse();
 
     return match cli.command {
@@ -31,7 +33,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 }
 
-fn load_config() -> Result<Configuration, Box<dyn std::error::Error>> {
+fn read_config() -> Result<Configuration> {
     use std::io::{self, Read};
 
     let mut buff = Vec::new();
@@ -41,28 +43,26 @@ fn load_config() -> Result<Configuration, Box<dyn std::error::Error>> {
     Ok(config)
 }
 
-fn lint_config() -> Result<(), Box<dyn std::error::Error>> {
-    let config = load_config()?;
+fn lint_config() -> Result<()> {
+    let config = read_config()?;
 
     dbg!(config);
 
     Ok(())
 }
 
-fn print_config(format: PrintFormat) -> Result<(), Box<dyn std::error::Error>> {
-    let config = load_config()?;
+fn print_config(format: PrintFormat) -> Result<()> {
+    let config = read_config()?;
 
     let output = match format {
-        PrintFormat::Evolution => printer::evolution::print_config(config),
-        PrintFormat::Thunderbird => printer::thunderbird::print_config(config),
+        PrintFormat::Evolution => printer::evolution::print_config(config)?,
+        PrintFormat::Thunderbird => printer::thunderbird::print_config(config)?,
     };
 
     println!("{}", output);
 
     Ok(())
 }
-
-use std::io::BufReader;
 
 use clap::Parser;
 use configuration::Configuration;

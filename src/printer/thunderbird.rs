@@ -1,8 +1,14 @@
-pub fn print_config(config: Configuration) -> String {
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("thunderbird_id is missing")]
+    MissingThunderbirdId,
+}
+
+pub fn print_config(config: Configuration) -> Result<String> {
     let mut document = DatDocument::new(9, false);
 
     for account in config.accounts {
-        let thunderbird_id = account.thunderbird_id.expect("thunderbird_id must be set");
+        let thunderbird_id = account.thunderbird_id.ok_or(Error::MissingThunderbirdId)?;
 
         for message_filter in account.message_filters {
             let move_to = helpers::format_folder("imap", &thunderbird_id, &message_filter.move_to);
@@ -16,7 +22,7 @@ pub fn print_config(config: Configuration) -> String {
         }
     }
 
-    document.to_string()
+    Ok(document.to_string())
 }
 
 mod helpers {
@@ -142,7 +148,7 @@ mod tests {
         };
 
         assert_eq!(
-            print_config(config),
+            print_config(config).unwrap(),
             vec![
                 "version=\"9\"",
                 "logging=\"no\"",
@@ -167,4 +173,4 @@ mod tests {
     use crate::configuration::{Account, Condition, Contains, EndsWith, Field, MessageFilter};
 }
 
-use crate::{configuration::Configuration, dat::DatDocument};
+use crate::{configuration::Configuration, dat::DatDocument, Result};

@@ -1,10 +1,16 @@
-pub fn print_config(config: Configuration) -> String {
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("evolution_id is missing")]
+    MissingEvolutionId,
+}
+
+pub fn print_config(config: Configuration) -> Result<String> {
     let mut document = XmlDocument::new();
 
     let mut filter_options = XmlElement::open("filteroptions");
 
     for account in config.accounts {
-        let evolution_id = account.evolution_id.expect("evolution_id must be set");
+        let evolution_id = account.evolution_id.ok_or(Error::MissingEvolutionId)?;
 
         let mut rule_set = XmlElement::open("ruleset");
 
@@ -108,7 +114,8 @@ pub fn print_config(config: Configuration) -> String {
     }
 
     document.append_element(filter_options);
-    document.finish()
+
+    Ok(document.finish())
 }
 
 mod helpers {
@@ -156,7 +163,7 @@ mod tests {
         };
 
         assert_eq!(
-            print_config(config),
+            print_config(config).unwrap(),
             vec![
                 "<?xml version=\"1.0\"?>",
                 "<filteroptions>",
@@ -213,4 +220,5 @@ mod tests {
 use crate::{
     configuration::{Condition, Configuration},
     xml::{XmlDocument, XmlElement},
+    Result,
 };
