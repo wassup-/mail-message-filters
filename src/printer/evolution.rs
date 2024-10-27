@@ -29,16 +29,16 @@ pub fn print_config(config: Configuration) -> String {
 
                         for needle in contains.values {
                             let mut xml_part =
-                                XmlElement::open_attr("part", format!("name=\"{}\"", field));
+                                XmlElement::open_attr("part", format!("name=\"{field}\""));
 
                             xml_part.append_child(XmlElement::open_attr(
                                 "value",
-                                "name=\"sender-type\" type=\"option\" value=\"contains\"",
+                                format!("name=\"{field}-type\" type=\"option\" value=\"contains\""),
                             ));
 
                             let mut value = XmlElement::open_attr(
                                 "value",
-                                format!("name=\"{}\" type=\"string\" allow-empty=\"false\"", field),
+                                format!("name=\"{field}\" type=\"string\" allow-empty=\"false\""),
                             );
 
                             value.append_child({
@@ -56,16 +56,18 @@ pub fn print_config(config: Configuration) -> String {
 
                         for suffix in ends_with.values {
                             let mut xml_part =
-                                XmlElement::open_attr("part", format!("name=\"{}\"", field));
+                                XmlElement::open_attr("part", format!("name=\"{field}\""));
 
                             xml_part.append_child(XmlElement::open_attr(
                                 "value",
-                                "name=\"sender-type\" type=\"option\" value=\"ends with\"",
+                                format!(
+                                    "name=\"{field}-type\" type=\"option\" value=\"ends with\""
+                                ),
                             ));
 
                             let mut value = XmlElement::open_attr(
                                 "value",
-                                format!("name=\"{}\" type=\"string\" allow-empty=\"false\"", field),
+                                format!("name=\"{field}\" type=\"string\" allow-empty=\"false\""),
                             );
 
                             value.append_child({
@@ -91,8 +93,8 @@ pub fn print_config(config: Configuration) -> String {
             value.append_child(XmlElement::open_attr(
                 "folder",
                 format!(
-                    "uri=\"folder://{}/{}\"",
-                    evolution_id, message_filter.move_to
+                    "uri=\"{}\"",
+                    helpers::format_folder(&evolution_id, &message_filter.move_to)
                 ),
             ));
             part.append_child(value);
@@ -111,13 +113,101 @@ pub fn print_config(config: Configuration) -> String {
 
 mod helpers {
 
-    pub fn format_field(field: &str) -> String {
-        return if field == "from" {
-            "sender".to_owned()
-        } else {
-            field.to_owned()
-        };
+    pub fn format_field(field: &Field) -> String {
+        match field {
+            Field::From => "sender".to_owned(),
+        }
     }
+
+    pub fn format_folder(account: &str, folder: &str) -> String {
+        format!("folder://{account}/{folder}")
+    }
+
+    use crate::configuration::Field;
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_print_config() {
+        let config = Configuration {
+            accounts: vec![Account {
+                evolution_id: Some("evolution".to_owned()),
+                thunderbird_id: Some("thunderbird".to_owned()),
+                message_filters: vec![
+                    MessageFilter {
+                        title: "DigitalOcean".to_owned(),
+                        move_to: "do".to_owned(),
+                        conditions: vec![Condition::EndsWith(EndsWith {
+                            field: Field::From,
+                            values: vec!["@digitalocean.com".to_owned()],
+                        })],
+                    },
+                    MessageFilter {
+                        title: "Amazon".to_owned(),
+                        move_to: "amzn".to_owned(),
+                        conditions: vec![Condition::Contains(Contains {
+                            field: Field::From,
+                            values: vec!["@amazon.".to_owned()],
+                        })],
+                    },
+                ],
+            }],
+        };
+
+        assert_eq!(
+            print_config(config),
+            vec![
+                "<?xml version=\"1.0\"?>",
+                "<filteroptions>",
+                "<ruleset>",
+                "<rule enabled=\"true\" grouping=\"any\" source=\"incoming\">",
+                "<title>DigitalOcean</title>",
+                "<partset>",
+                "<part name=\"sender\">",
+                "<value name=\"sender-type\" type=\"option\" value=\"ends with\"></value>",
+                "<value name=\"sender\" type=\"string\" allow-empty=\"false\">",
+                "<string>@digitalocean.com</string>",
+                "</value>",
+                "</part>",
+                "</partset>",
+                "<actionset>",
+                "<part name=\"move-to-folder\">",
+                "<value name=\"folder\" type=\"folder\">",
+                "<folder uri=\"folder://evolution/do\">",
+                "</folder>",
+                "</value>",
+                "</part>",
+                "</actionset>",
+                "</rule>",
+                "<rule enabled=\"true\" grouping=\"any\" source=\"incoming\">",
+                "<title>Amazon</title>",
+                "<partset>",
+                "<part name=\"sender\">",
+                "<value name=\"sender-type\" type=\"option\" value=\"contains\"></value>",
+                "<value name=\"sender\" type=\"string\" allow-empty=\"false\">",
+                "<string>@amazon.</string>",
+                "</value>",
+                "</part>",
+                "</partset>",
+                "<actionset>",
+                "<part name=\"move-to-folder\">",
+                "<value name=\"folder\" type=\"folder\">",
+                "<folder uri=\"folder://evolution/amzn\">",
+                "</folder>",
+                "</value>",
+                "</part>",
+                "</actionset>",
+                "</rule>",
+                "</ruleset>",
+                "</filteroptions>"
+            ]
+            .join("")
+        );
+    }
+
+    use super::*;
+    use crate::configuration::{Account, Condition, Contains, EndsWith, Field, MessageFilter};
 }
 
 use crate::{
