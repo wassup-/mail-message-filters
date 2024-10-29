@@ -14,7 +14,9 @@ struct Cli {
 
 #[derive(clap::Subcommand, Debug)]
 enum Command {
+    /// Lint the configuration file.
     Lint,
+    /// Print the configuration file in a specific format.
     Print { format: PrintFormat },
 }
 

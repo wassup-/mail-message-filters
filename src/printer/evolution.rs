@@ -93,18 +93,25 @@ pub fn print_config(config: Configuration) -> Result<String> {
 
             let mut action_set = XmlElement::open("actionset");
 
-            let mut part = XmlElement::open_attr("part", "name=\"move-to-folder\"");
+            for action in message_filter.actions {
+                match action {
+                    Action::MoveTo(move_to) => {
+                        let mut part = XmlElement::open_attr("part", "name=\"move-to-folder\"");
 
-            let mut value = XmlElement::open_attr("value", "name=\"folder\" type=\"folder\"");
-            value.append_child(XmlElement::open_attr(
-                "folder",
-                format!(
-                    "uri=\"{}\"",
-                    helpers::format_folder(&evolution_id, &message_filter.move_to)
-                ),
-            ));
-            part.append_child(value);
-            action_set.append_child(part);
+                        let mut value =
+                            XmlElement::open_attr("value", "name=\"folder\" type=\"folder\"");
+                        value.append_child(XmlElement::open_attr(
+                            "folder",
+                            format!(
+                                "uri=\"{}\"",
+                                helpers::format_folder(&evolution_id, &move_to.folder)
+                            ),
+                        ));
+                        part.append_child(value);
+                        action_set.append_child(part);
+                    }
+                }
+            }
 
             rule.append_child(action_set);
             rule_set.append_child(rule);
@@ -144,18 +151,22 @@ mod tests {
                 message_filters: vec![
                     MessageFilter {
                         title: "DigitalOcean".to_owned(),
-                        move_to: "do".to_owned(),
                         conditions: vec![Condition::EndsWith(EndsWith {
                             field: Field::From,
                             values: vec!["@digitalocean.com".to_owned()],
                         })],
+                        actions: vec![Action::MoveTo(MoveTo {
+                            folder: "do".to_owned(),
+                        })],
                     },
                     MessageFilter {
                         title: "Amazon".to_owned(),
-                        move_to: "amzn".to_owned(),
                         conditions: vec![Condition::Contains(Contains {
                             field: Field::From,
                             values: vec!["@amazon.".to_owned()],
+                        })],
+                        actions: vec![Action::MoveTo(MoveTo {
+                            folder: "amzn".to_owned(),
                         })],
                     },
                 ],
@@ -214,11 +225,13 @@ mod tests {
     }
 
     use super::*;
-    use crate::configuration::{Account, Condition, Contains, EndsWith, Field, MessageFilter};
+    use crate::configuration::{
+        Account, Condition, Contains, EndsWith, Field, MessageFilter, MoveTo,
+    };
 }
 
 use crate::{
-    configuration::{Condition, Configuration},
+    configuration::{Action, Condition, Configuration},
     xml::{XmlDocument, XmlElement},
     Result,
 };

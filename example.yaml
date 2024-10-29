@@ -4,14 +4,16 @@
 
   message_filters:
     - title: DigitalOcean
-      move_to: DigitalOcean
+      actions:
+        - move_to: DigitalOcean
       conditions:
         - field: from
           ends_with:
             - '@digitalocean.com'
 
     - title: Github
-      move_to: Github
+      actions:
+        - move_to: Github
       conditions:
         - field: from
           ends_with:

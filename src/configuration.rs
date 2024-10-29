@@ -15,7 +15,7 @@ pub struct Account {
 pub struct MessageFilter {
     pub title: String,
     pub conditions: Vec<Condition>,
-    pub move_to: String,
+    pub actions: Vec<Action>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -43,6 +43,18 @@ pub struct Contains {
 pub enum Field {
     #[serde(rename = "from")]
     From,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum Action {
+    MoveTo(MoveTo),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct MoveTo {
+    #[serde(rename = "move_to")]
+    pub folder: String,
 }
 
 use serde::{Deserialize, Serialize};

@@ -11,14 +11,21 @@ pub fn print_config(config: Configuration) -> Result<String> {
         let thunderbird_id = account.thunderbird_id.ok_or(Error::MissingThunderbirdId)?;
 
         for message_filter in account.message_filters {
-            let move_to = helpers::format_folder("imap", &thunderbird_id, &message_filter.move_to);
+            for action in message_filter.actions {
+                match action {
+                    Action::MoveTo(move_to) => {
+                        let move_to =
+                            helpers::format_folder("imap", &thunderbird_id, &move_to.folder);
 
-            helpers::append_filter(
-                &mut document,
-                message_filter.title,
-                move_to,
-                &message_filter.conditions,
-            )
+                        helpers::append_filter(
+                            &mut document,
+                            &message_filter.title,
+                            &move_to,
+                            &message_filter.conditions,
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -29,8 +36,8 @@ mod helpers {
 
     pub fn append_filter(
         doc: &mut DatDocument,
-        name: String,
-        move_to: String,
+        name: &str,
+        move_to: &str,
         conditions: &[Condition],
     ) {
         doc.append("name", quote(name));
@@ -129,18 +136,22 @@ mod tests {
                 message_filters: vec![
                     MessageFilter {
                         title: "DigitalOcean".to_owned(),
-                        move_to: "do".to_owned(),
                         conditions: vec![Condition::EndsWith(EndsWith {
                             field: Field::From,
                             values: vec!["@digitalocean.com".to_owned()],
                         })],
+                        actions: vec![Action::MoveTo(MoveTo {
+                            folder: "do".to_owned(),
+                        })],
                     },
                     MessageFilter {
                         title: "Amazon".to_owned(),
-                        move_to: "amzn".to_owned(),
                         conditions: vec![Condition::Contains(Contains {
                             field: Field::From,
                             values: vec!["@amazon.".to_owned()],
+                        })],
+                        actions: vec![Action::MoveTo(MoveTo {
+                            folder: "amzn".to_owned(),
                         })],
                     },
                 ],
@@ -170,7 +181,13 @@ mod tests {
     }
 
     use super::*;
-    use crate::configuration::{Account, Condition, Contains, EndsWith, Field, MessageFilter};
+    use crate::configuration::{
+        Account, Action, Condition, Contains, EndsWith, Field, MessageFilter, MoveTo,
+    };
 }
 
-use crate::{configuration::Configuration, dat::DatDocument, Result};
+use crate::{
+    configuration::{Action, Configuration},
+    dat::DatDocument,
+    Result,
+};
