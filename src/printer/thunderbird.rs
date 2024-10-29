@@ -11,9 +11,9 @@ pub fn print_config(config: Configuration) -> Result<String> {
         let thunderbird_id = account.thunderbird_id.ok_or(Error::MissingThunderbirdId)?;
 
         for message_filter in account.message_filters {
-            for action in message_filter.actions {
+            for action in message_filter.then {
                 match action {
-                    Action::MoveTo(move_to) => {
+                    Then::MoveTo(move_to) => {
                         let move_to =
                             helpers::format_folder("imap", &thunderbird_id, &move_to.folder);
 
@@ -21,7 +21,7 @@ pub fn print_config(config: Configuration) -> Result<String> {
                             &mut document,
                             &message_filter.title,
                             &move_to,
-                            &message_filter.conditions,
+                            &message_filter.when,
                         )
                     }
                 }
@@ -34,25 +34,20 @@ pub fn print_config(config: Configuration) -> Result<String> {
 
 mod helpers {
 
-    pub fn append_filter(
-        doc: &mut DatDocument,
-        name: &str,
-        move_to: &str,
-        conditions: &[Condition],
-    ) {
+    pub fn append_filter(doc: &mut DatDocument, name: &str, move_to: &str, when: &[When]) {
         doc.append("name", quote(name));
         doc.append("enabled", quote("yes"));
         doc.append("type", quote("17"));
         doc.append("action", quote("Move to folder"));
         doc.append("actionValue", quote(move_to));
-        doc.append("condition", format_condition(conditions));
+        doc.append("condition", format_condition(when));
     }
 
-    fn format_condition(conditions: &[Condition]) -> String {
-        let inner: Vec<String> = conditions
+    fn format_condition(when: &[When]) -> String {
+        let inner: Vec<String> = when
             .iter()
             .map(|cond| match cond {
-                Condition::Contains(cond) => {
+                When::Contains(cond) => {
                     let prefix: &'static str = if cond.values.len() == 1 { "AND" } else { "OR" };
                     let field = format_field(&cond.field);
                     cond.values
@@ -61,7 +56,7 @@ mod helpers {
                         .collect::<Vec<_>>()
                         .join(" ")
                 }
-                Condition::EndsWith(cond) => {
+                When::EndsWith(cond) => {
                     let prefix: &'static str = if cond.values.len() == 1 { "AND" } else { "OR" };
                     let field = format_field(&cond.field);
                     cond.values
@@ -95,7 +90,7 @@ mod helpers {
         #[test]
         fn test_format_one_condition() {
             assert_eq!(
-                format_condition(&[Condition::EndsWith(EndsWith {
+                format_condition(&[When::EndsWith(EndsWith {
                     field: Field::From,
                     values: vec!["@example.com".to_owned()]
                 })]),
@@ -106,7 +101,7 @@ mod helpers {
         #[test]
         fn test_format_multiple_conditions() {
             assert_eq!(
-                format_condition(&[Condition::EndsWith(EndsWith {
+                format_condition(&[When::EndsWith(EndsWith {
                     field: Field::From,
                     values: vec!["@example.com".to_owned(), "@test.com".to_owned()]
                 })]),
@@ -119,7 +114,7 @@ mod helpers {
     }
 
     use crate::{
-        configuration::{Condition, Field},
+        configuration::{Field, When},
         dat::DatDocument,
         util::quote,
     };
@@ -136,21 +131,21 @@ mod tests {
                 message_filters: vec![
                     MessageFilter {
                         title: "DigitalOcean".to_owned(),
-                        conditions: vec![Condition::EndsWith(EndsWith {
+                        when: vec![When::EndsWith(EndsWith {
                             field: Field::From,
                             values: vec!["@digitalocean.com".to_owned()],
                         })],
-                        actions: vec![Action::MoveTo(MoveTo {
+                        then: vec![Then::MoveTo(MoveTo {
                             folder: "do".to_owned(),
                         })],
                     },
                     MessageFilter {
                         title: "Amazon".to_owned(),
-                        conditions: vec![Condition::Contains(Contains {
+                        when: vec![When::Contains(Contains {
                             field: Field::From,
                             values: vec!["@amazon.".to_owned()],
                         })],
-                        actions: vec![Action::MoveTo(MoveTo {
+                        then: vec![Then::MoveTo(MoveTo {
                             folder: "amzn".to_owned(),
                         })],
                     },
@@ -182,12 +177,12 @@ mod tests {
 
     use super::*;
     use crate::configuration::{
-        Account, Action, Condition, Contains, EndsWith, Field, MessageFilter, MoveTo,
+        Account, Contains, EndsWith, Field, MessageFilter, MoveTo, Then, When,
     };
 }
 
 use crate::{
-    configuration::{Action, Configuration},
+    configuration::{Configuration, Then},
     dat::DatDocument,
     Result,
 };

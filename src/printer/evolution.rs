@@ -28,9 +28,9 @@ pub fn print_config(config: Configuration) -> Result<String> {
 
             let mut part_set = XmlElement::open("partset");
 
-            for condition in message_filter.conditions {
+            for condition in message_filter.when {
                 match condition {
-                    Condition::Contains(contains) => {
+                    When::Contains(contains) => {
                         let field = helpers::format_field(&contains.field);
 
                         for needle in contains.values {
@@ -57,7 +57,7 @@ pub fn print_config(config: Configuration) -> Result<String> {
                             part_set.append_child(xml_part);
                         }
                     }
-                    Condition::EndsWith(ends_with) => {
+                    When::EndsWith(ends_with) => {
                         let field = helpers::format_field(&ends_with.field);
 
                         for suffix in ends_with.values {
@@ -93,9 +93,9 @@ pub fn print_config(config: Configuration) -> Result<String> {
 
             let mut action_set = XmlElement::open("actionset");
 
-            for action in message_filter.actions {
+            for action in message_filter.then {
                 match action {
-                    Action::MoveTo(move_to) => {
+                    Then::MoveTo(move_to) => {
                         let mut part = XmlElement::open_attr("part", "name=\"move-to-folder\"");
 
                         let mut value =
@@ -151,21 +151,21 @@ mod tests {
                 message_filters: vec![
                     MessageFilter {
                         title: "DigitalOcean".to_owned(),
-                        conditions: vec![Condition::EndsWith(EndsWith {
+                        when: vec![When::EndsWith(EndsWith {
                             field: Field::From,
                             values: vec!["@digitalocean.com".to_owned()],
                         })],
-                        actions: vec![Action::MoveTo(MoveTo {
+                        then: vec![Then::MoveTo(MoveTo {
                             folder: "do".to_owned(),
                         })],
                     },
                     MessageFilter {
                         title: "Amazon".to_owned(),
-                        conditions: vec![Condition::Contains(Contains {
+                        when: vec![When::Contains(Contains {
                             field: Field::From,
                             values: vec!["@amazon.".to_owned()],
                         })],
-                        actions: vec![Action::MoveTo(MoveTo {
+                        then: vec![Then::MoveTo(MoveTo {
                             folder: "amzn".to_owned(),
                         })],
                     },
@@ -225,13 +225,11 @@ mod tests {
     }
 
     use super::*;
-    use crate::configuration::{
-        Account, Condition, Contains, EndsWith, Field, MessageFilter, MoveTo,
-    };
+    use crate::configuration::{Account, Contains, EndsWith, Field, MessageFilter, MoveTo, When};
 }
 
 use crate::{
-    configuration::{Action, Condition, Configuration},
+    configuration::{Configuration, Then, When},
     xml::{XmlDocument, XmlElement},
     Result,
 };

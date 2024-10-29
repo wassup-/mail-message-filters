@@ -14,13 +14,13 @@ pub struct Account {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MessageFilter {
     pub title: String,
-    pub conditions: Vec<Condition>,
-    pub actions: Vec<Action>,
+    pub when: Vec<When>,
+    pub then: Vec<Then>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
-pub enum Condition {
+pub enum When {
     Contains(Contains),
     EndsWith(EndsWith),
 }
@@ -47,7 +47,7 @@ pub enum Field {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
-pub enum Action {
+pub enum Then {
     MoveTo(MoveTo),
 }
 
