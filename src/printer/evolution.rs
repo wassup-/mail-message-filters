@@ -7,26 +7,26 @@ pub enum Error {
 pub fn print_config(config: Configuration) -> Result<String> {
     let mut document = XmlDocument::new();
 
-    let mut filter_options = XmlElement::open("filteroptions");
+    let mut filter_options = XmlElementBuilder::new("filteroptions");
 
     for account in config.accounts {
         let evolution_id = account.evolution_id.ok_or(Error::MissingEvolutionId)?;
 
-        let mut rule_set = XmlElement::open("ruleset");
+        let mut rule_set = XmlElementBuilder::new("ruleset");
 
         for message_filter in account.message_filters {
-            let mut rule = XmlElement::open_attr(
-                "rule",
-                "enabled=\"true\" grouping=\"any\" source=\"incoming\"",
-            );
+            let mut rule = XmlElementBuilder::new("rule");
+            rule.append_attr("enabled", "true")
+                .append_attr("grouping", "any")
+                .append_attr("source", "incoming");
 
             rule.append_child({
-                let mut title = XmlElement::open("title");
-                title.append(message_filter.title);
-                title
+                let mut title = XmlTextElementBuilder::new("title");
+                title.append_text(message_filter.title);
+                title.build()
             });
 
-            let mut part_set = XmlElement::open("partset");
+            let mut part_set = XmlElementBuilder::new("partset");
 
             for condition in message_filter.when {
                 match condition {
@@ -34,95 +34,111 @@ pub fn print_config(config: Configuration) -> Result<String> {
                         let field = helpers::format_field(&contains.field);
 
                         for needle in contains.values {
-                            let mut xml_part =
-                                XmlElement::open_attr("part", format!("name=\"{field}\""));
+                            let mut xml_part = XmlElementBuilder::new("part");
+                            xml_part.append_attr("name", &field);
 
-                            xml_part.append_child(XmlElement::open_attr(
-                                "value",
-                                format!("name=\"{field}-type\" type=\"option\" value=\"contains\""),
-                            ));
-
-                            let mut value = XmlElement::open_attr(
-                                "value",
-                                format!("name=\"{field}\" type=\"string\" allow-empty=\"false\""),
-                            );
-
-                            value.append_child({
-                                let mut string = XmlElement::open("string");
-                                string.append(needle);
-                                string
+                            xml_part.append_child({
+                                let mut value = XmlElementBuilder::new("value");
+                                value
+                                    .append_attr("name", format!("{field}-type"))
+                                    .append_attr("type", "option")
+                                    .append_attr("value", "contains");
+                                value.build()
                             });
 
-                            xml_part.append_child(value);
-                            part_set.append_child(xml_part);
+                            xml_part.append_child({
+                                let mut value = XmlElementBuilder::new("value");
+                                value
+                                    .append_attr("name", &field)
+                                    .append_attr("type", "string")
+                                    .append_attr("allow-empty", "false");
+                                value.append_child({
+                                    let mut string = XmlTextElementBuilder::new("string");
+                                    string.append_text(needle);
+                                    string.build()
+                                });
+                                value.build()
+                            });
+
+                            part_set.append_child(xml_part.build());
                         }
                     }
                     When::EndsWith(ends_with) => {
                         let field = helpers::format_field(&ends_with.field);
 
                         for suffix in ends_with.values {
-                            let mut xml_part =
-                                XmlElement::open_attr("part", format!("name=\"{field}\""));
+                            let mut xml_part = XmlElementBuilder::new("part");
+                            xml_part.append_attr("name", &field);
 
-                            xml_part.append_child(XmlElement::open_attr(
-                                "value",
-                                format!(
-                                    "name=\"{field}-type\" type=\"option\" value=\"ends with\""
-                                ),
-                            ));
-
-                            let mut value = XmlElement::open_attr(
-                                "value",
-                                format!("name=\"{field}\" type=\"string\" allow-empty=\"false\""),
-                            );
-
-                            value.append_child({
-                                let mut string = XmlElement::open("string");
-                                string.append(suffix);
-                                string
+                            xml_part.append_child({
+                                let mut value = XmlElementBuilder::new("value");
+                                value
+                                    .append_attr("name", format!("{field}-type"))
+                                    .append_attr("type", "option")
+                                    .append_attr("value", "ends with");
+                                value.build()
                             });
 
-                            xml_part.append_child(value);
-                            part_set.append_child(xml_part);
+                            xml_part.append_child({
+                                let mut value = XmlElementBuilder::new("value");
+                                value
+                                    .append_attr("name", &field)
+                                    .append_attr("type", "string")
+                                    .append_attr("allow-empty", "false");
+                                value.append_child({
+                                    let mut string = XmlTextElementBuilder::new("string");
+                                    string.append_text(suffix);
+                                    string.build()
+                                });
+                                value.build()
+                            });
+
+                            part_set.append_child(xml_part.build());
                         }
                     }
                 }
             }
 
-            rule.append_child(part_set);
+            rule.append_child(part_set.build());
 
-            let mut action_set = XmlElement::open("actionset");
+            let mut action_set = XmlElementBuilder::new("actionset");
 
             for action in message_filter.then {
                 match action {
                     Then::MoveTo(move_to) => {
-                        let mut part = XmlElement::open_attr("part", "name=\"move-to-folder\"");
+                        let mut part = XmlElementBuilder::new("part");
+                        part.append_attr("name", "move-to-folder");
 
-                        let mut value =
-                            XmlElement::open_attr("value", "name=\"folder\" type=\"folder\"");
-                        value.append_child(XmlElement::open_attr(
-                            "folder",
-                            format!(
-                                "uri=\"{}\"",
-                                helpers::format_folder(&evolution_id, &move_to.folder)
-                            ),
-                        ));
-                        part.append_child(value);
-                        action_set.append_child(part);
+                        part.append_child({
+                            let mut value = XmlElementBuilder::new("value");
+                            value
+                                .append_attr("name", "folder")
+                                .append_attr("type", "folder");
+                            value.append_child({
+                                let mut folder = XmlElementBuilder::new("folder");
+                                folder.append_attr(
+                                    "uri",
+                                    helpers::format_folder(&evolution_id, &move_to.folder),
+                                );
+                                folder.build()
+                            });
+                            value.build()
+                        });
+                        action_set.append_child(part.build());
                     }
                 }
             }
 
-            rule.append_child(action_set);
-            rule_set.append_child(rule);
+            rule.append_child(action_set.build());
+            rule_set.append_child(rule.build());
         }
 
-        filter_options.append_child(rule_set);
+        filter_options.append_child(rule_set.build());
     }
 
-    document.append_element(filter_options);
+    document.append_element(filter_options.build());
 
-    Ok(document.finish())
+    Ok(document.to_string())
 }
 
 mod helpers {
@@ -230,6 +246,6 @@ mod tests {
 
 use crate::{
     configuration::{Configuration, Then, When},
-    xml::{XmlDocument, XmlElement},
+    xml::{XmlDocument, XmlElementBuilder, XmlTextElementBuilder},
     Result,
 };
