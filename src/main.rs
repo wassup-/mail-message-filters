@@ -1,7 +1,6 @@
 mod configuration;
 mod dat;
 mod printer;
-mod util;
 mod xml;
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;

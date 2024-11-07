@@ -35,11 +35,11 @@ pub fn print_config(config: Configuration) -> Result<String> {
 mod helpers {
 
     pub fn append_filter(doc: &mut DatDocument, name: &str, move_to: &str, when: &[When]) {
-        doc.append("name", quote(name));
-        doc.append("enabled", quote("yes"));
-        doc.append("type", quote("17"));
-        doc.append("action", quote("Move to folder"));
-        doc.append("actionValue", quote(move_to));
+        doc.append("name", name);
+        doc.append("enabled", "yes");
+        doc.append("type", "17");
+        doc.append("action", "Move to folder");
+        doc.append("actionValue", move_to);
         doc.append("condition", format_condition(when));
     }
 
@@ -116,7 +116,6 @@ mod helpers {
     use crate::{
         configuration::{Field, When},
         dat::DatDocument,
-        util::quote,
     };
 }
 
@@ -163,13 +162,13 @@ mod tests {
                 "type=\"17\"",
                 "action=\"Move to folder\"",
                 "actionValue=\"imap://thunderbird/do\"",
-                "condition=AND (from,ends with,@digitalocean.com)",
+                "condition=\"AND (from,ends with,@digitalocean.com)\"",
                 "name=\"Amazon\"",
                 "enabled=\"yes\"",
                 "type=\"17\"",
                 "action=\"Move to folder\"",
                 "actionValue=\"imap://thunderbird/amzn\"",
-                "condition=AND (from,contains,@amazon.)"
+                "condition=\"AND (from,contains,@amazon.)\""
             ]
             .join("\n")
         );
