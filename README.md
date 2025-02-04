@@ -1,7 +1,7 @@
 # Usage
 
 ```sh
-Usage: hello-world <COMMAND>
+Usage: mail-message-filters <COMMAND>
 
 Commands:
   lint   Lint the configuration file
@@ -15,13 +15,13 @@ Options:
 ## Example usage
 
 ```sh
-hello-world lint < example.yaml
+mail-message-filters lint < example.yaml
 ```
 
 ```sh
-hello-world print evolution < example.yaml > filters.xml
+mail-message-filters print evolution < example.yaml > filters.xml
 ```
 
 ```sh
-hello-world print thunderbird < example.yaml > msgFilterRules.dat
+mail-message-filters print thunderbird < example.yaml > msgFilterRules.dat
 ```
